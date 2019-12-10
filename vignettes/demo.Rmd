@@ -1,0 +1,60 @@
+---
+title: "demo"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{demo}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Step Regression
+  This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error.  It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement to help understand the work done by each variable, and perhaps to help teach some of the fundamentals of how regressions work.  In this spirit, the focus is on how the residuals change with each successive variable added to a regression.
+
+```{r setup}
+library(StepRegression)
+```
+# Example One: mtcars
+  Let us take one of the most commonly used built-in datasets in R: mtcars.  First, we'll asign mpg to our response vector y, and the remaining columns to a design matrix x.  Then, we'll call our step_regression function, and plug the results into res_plotter_double() with addIntercept = TRUE.
+```{r,mtcars}
+data(mtcars)
+head(mtcars)
+```
+# Order and MSE
+  By default, the columns of the residuals matrix are ordered so that the intercept is in the first column, and the most significant variables come first.  In this case, significance is determined by which columns give the lowest MSE in predicting the response vector when alone.  This does not, however, mean that they will be significant when applied alongside other variables.
+```{r,mtcars_residuals, fig.width=8, fig.height=16}
+y<-mtcars$mpg
+x<-mtcars[,-1]
+res<-StepRegression::step_regression(x,y,addIntercept=TRUE)
+head(as.data.frame(res))
+```
+# res_plotter() and res_plotter_double()
+  There are two built-in plotting functions for this package: res_plotter() and res_plotter_double().  They both create residuals vs values sub-plots for each variable, with each corner containing the MSE after each variable is added to the regression, and the percent by which each variable reduced the MSE.  The only difference between the two functions is that res_plotter_double has two columns of plots.
+```{r,mtcars_visual, fig.width=8, fig.height=16}
+res_plotter_double(res,y,main="Residuals v MPG for Various Factors")
+```
+# Utility
+  This function has two main uses.  First, it helps identify which variables to include in a multivariate regression.  Looking at the mtcars visual, it is interesting to note that several variables that seemed important when examined in isolation are found to do little to imporve the MSE when others are included as well.  The "disp" (displacement), "drat" (rear axle ratio), "vs" (v-shape vs inline), "carb" (number of carburetors) and "gear" all turned out to be less important than they initially seemed, while the opposite could be said for "hp" (horsepower), "am" (manual vs automatic), and "qsec" (quarter mile time).
+  The second use is helping to understand how regressions work.  Rather than regress all of the variables together, step_regression regresses each out of y and the remaining x variables.  Each step is essentially applying regression to the residuals leftover.
+
+```{r, swiss}
+data(swiss)
+head(swiss)
+```
+# Swiss Example & res_plotter()
+  Here is a second example, this time using the Swiss dataset with the res_plotter function.  Here, we are excluding "Infant.Mortality" as it does not seem an appropriate predictor of fertility.  The information conveyed by res_plotter() is essentially the same as res_plotter_double(), albeit with just one column.  One can once again see that the importance of variables changes when others are included--in this case the "examination" and "agriculture" have switches places of importance.
+```{r, swiss_example,fig.width=8,fig.height=16}
+y<-swiss$Fertility
+x<-swiss[,c(-1,-6)]
+res<-step_regression(x,y,addIntercept=TRUE)
+res_plotter(res,y,main="Residuals of Fertility by Various Factors")
+```
+
+
+

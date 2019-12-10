@@ -2,12 +2,14 @@
 #' @description this function takes a design matrix x, and a response vector y
 #' @param x a matrix or variable that can be turned into a matrix via as.matrix.
 #' @param y the response vector.  Defaults to NULL and redefined as the first column of x, or if that is constant, the last column of x
-#' @param labels a list of column labels.  Defaults to NULL and redefind as the existing column names
+#' @param labels a list of column labels.  Defaults to NULL; and if NULL, redefind as the existing column names. Can reorder columns if mseOrder=FALSE
 #' @param addIntercept adds a column of ones as the first row of x to serve as an intercept.  Defaults to TRUE.  The 1s are added before missing ys are handled.
+#' @param mseOrder whether to order elements by their MSE if applied individually.  Defaults to TRUE
 #' @importFrom stats sd
-#' @returns a matrix of residuals for each variable in x.
+#' @export
+#' @return a matrix of residuals for each variable in x.
 
-step_regression <- function(x, y=NULL, labels = NULL, addIntercept = TRUE){
+step_regression <- function(x, y=NULL, labels = NULL, addIntercept = TRUE,mseOrder=TRUE){
   if (!is.matrix(x)){
     x <- as.matrix(x)
   }
@@ -38,10 +40,32 @@ step_regression <- function(x, y=NULL, labels = NULL, addIntercept = TRUE){
       x <- x[,-ncol[x]]
     }
   }
+  if (mseOrder){
+    ord<-mse_order(x,y)
+    x <- x[,ord]
+    labels <- labels[ord]
+  }
   residuals <- regress_step(x,y)
   colnames(residuals)<-labels
   return(residuals)
 }
+#' mse_order
+#' @description given a design matrix x and response vector y, puts x's columns in order from least to most MSE.  Puts intercept 1st. Centers variables first.
+#' @param x a design matrix
+#' @param y a response vector
+#' @return an ordered matrix x
+#' @export
+mse_order <- function(x,y){
+  n <- ncol(x)
+  y<- y - mean(y)
+  mse<- function(x,y){
+    if (all(x==1)) return(-1)
+    x <- x - mean(x)
+    return(sum((y - x %*% solve(t(x) %*% x) %*% t(x) %*% y)^2))
+  }
+  order(apply(x,2,mse,y))
+}
+
 
 #' regress_step
 #' @description successively regresses each variable x our of the rest of the x matrix and y, then calls itself again.  Returns a vector of residuals for each variable.
@@ -50,7 +74,6 @@ step_regression <- function(x, y=NULL, labels = NULL, addIntercept = TRUE){
 #' @return a matrix of residuals, each column corresponds to a column of x
 regress_step<-function(x,y){
   temp <- regress_step_helper(x[,1])
-  print(colnames(x)[1])
   if (ncol(x)==1){
     residuals <- y - temp %*% y
     return(residuals)

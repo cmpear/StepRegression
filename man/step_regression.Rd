@@ -4,16 +4,22 @@
 \alias{step_regression}
 \title{step_regression}
 \usage{
-step_regression(x, y = NULL, labels = NULL, addIntercept = TRUE)
+step_regression(x, y = NULL, labels = NULL, addIntercept = TRUE,
+  mseOrder = TRUE)
 }
 \arguments{
 \item{x}{a matrix or variable that can be turned into a matrix via as.matrix.}
 
 \item{y}{the response vector.  Defaults to NULL and redefined as the first column of x, or if that is constant, the last column of x}
 
-\item{labels}{a list of column labels.  Defaults to NULL and redefind as the existing column names}
+\item{labels}{a list of column labels.  Defaults to NULL; and if NULL, redefind as the existing column names. Can reorder columns if mseOrder=FALSE}
 
 \item{addIntercept}{adds a column of ones as the first row of x to serve as an intercept.  Defaults to TRUE.  The 1s are added before missing ys are handled.}
+
+\item{mseOrder}{whether to order elements by their MSE if applied individually.  Defaults to TRUE}
+}
+\value{
+a matrix of residuals for each variable in x.
 }
 \description{
 this function takes a design matrix x, and a response vector y

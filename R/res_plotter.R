@@ -7,6 +7,7 @@
 #' @param ... additional graphical parameters for use in title() function, such as main="Title of Plot"
 #' @import graphics
 #' @importFrom grDevices hcl
+#' @export
 
 res_plotter <- function(res,y,xlab="y-values",ylab="residuals",...){
   n <- ncol(res)
@@ -19,21 +20,30 @@ res_plotter <- function(res,y,xlab="y-values",ylab="residuals",...){
   centers <- n:1/n - 1/n/2
   abline(h = centers,lty=3)
   par(pch=19,cex=1.4)
+  lastRes <- -1
   for (i in 1:n){
     points(y=centers[i] + res[,i]/max(abs(res))/n/2,x=(y-min(y))/(max(y)-min(y)),col=col[i])
     here <- (bounds[i]*4 + centers[i])/5
     text(x=-0.03,y=here,labels=colnames(res)[i], pos = 4,cex=0.6)
     here <- (bounds[i] + centers[i])/2
-    text(x=-0.03,y=here,labels=paste("MSE:",round(sum((res[,i])^2),3)),cex=0.6, pos = 4)
+    thisRes <- round(sum((res[,i])^2),3)
+    text(x=-0.03,y=here,labels=paste("MSE:",thisRes),cex=0.6, pos = 4)
+    if (lastRes!= -1)
+    {
+      here <- (bounds[i] + centers[i] * 4)/5
+      reduction <- round((lastRes-thisRes)/lastRes * 100,2)
+      text(x=-0.03, y= here, labels = paste0("MSE Reduced: ",reduction,"%"),cex=0.6,pos=4)
+    }
+    lastRes<-thisRes
   }
   par(cex=0.7)
   m <- round(max(abs(res)),3)
-  
+
   axis(side=2,at=bounds[c(1,n+1)],labels=c(m,-m),lwd=0,lwd.ticks=0,col="black")
   axis(side=2,at=bounds[c(-1,-(n+1))],labels=rep(paste("+/-",m),n-1),lwd=0,lwd.ticks=0,col="black")
-  axis(side=2,at=centers,labels=rep(0,length(centers)),lwd=0,lwd.tcks=0,col="black")
+  axis(side=2,at=centers,labels=rep(0,length(centers)),lwd=0,lwd.ticks=0,col="black")
   par(cex=1)
-  
+
   axis(side=1,tick=TRUE ,line=NA,labels=FALSE,at=(y-min(y))/(max(y)-min(y)),col.ticks='red')
   labels <- range(y)
   labels <- c(labels[1], (labels[1]*3 + labels[2]*1)/4, (labels[1] + labels[2])/2, (labels[1] * 1 + labels[2] * 3)/4, labels[2])
@@ -44,7 +54,7 @@ res_plotter <- function(res,y,xlab="y-values",ylab="residuals",...){
 
 
 #' res_plotter_double
-#' @description creates a y-values vs residuals plot, with one sub-plot per column in a residuals matrix.  Sub-plots are organized in two columns.  
+#' @description creates a y-values vs residuals plot, with one sub-plot per column in a residuals matrix.  Sub-plots are organized in two columns.
 #' @param res a matrix of residuals
 #' @param y the response vector
 #' @param xlab label for x-axis, defaults to "y-values"
@@ -52,6 +62,7 @@ res_plotter <- function(res,y,xlab="y-values",ylab="residuals",...){
 #' @param ... additional graphical parameters for title(), useful for adding main="my plot"
 #' @import graphics
 #' @importFrom grDevices hcl
+#' @export
 
 res_plotter_double<-function(res,y,xlab="y-values",ylab="residuals",...){
   n<-ncol(res)
@@ -79,23 +90,30 @@ res_plotter_double<-function(res,y,xlab="y-values",ylab="residuals",...){
   text(x=0.5,y=(1:(n-1))/n,labels=paste0("+/- ",m))
   adjust<-max(abs(res))*n*2
   par(pch=19)
-  for (i in 1:n){
+  lastRes<- -1
+  for (i in 1:ncol(res)){
     par(cex=1.4)
-    points(y=centers[i] + res[,i]/adjust,
-           x=(y-min(y))/(max(y)-min(y))*ad + lb,
+    if (i <=n) {
+      there <- lb
+      this  <- i
+    }
+    else {
+      there <- mr
+      this <- i - n
+    }
+    here  <- (bounds[this]*3 + centers[this])/4
+    points(y=centers[this] + res[,i]/adjust,
+           x=(y-min(y))/(max(y)-min(y))*ad + there,
            col=col[i])
     par(cex=0.8)
-    here <- (bounds[i]*3 + centers[i])/4
-    text(x=lb,y=here,labels=paste("MSE:",round(sum((res[,i])^2),3)), pos = 4)
-    if ((i + n)<=ncol(res)){
-      par(cex=1.4)
-      points(y=centers[i] + res[,i + n]/adjust,
-             x=(y-min(y))/(max(y)-min(y))*ad + mr,
-             col=col[i+n])
-      here <- (bounds[i]*3 + centers[i])/4
-      par(cex=0.8)
-      text(x=mr,y=here,labels=paste("MSE:",round(sum((res[,i+n])^2),3)), pos = 4)
+    thisRes <- round(sum((res[,i])^2),3)
+    text(x=there,y=here,labels=paste("MSE:",thisRes), pos = 4)
+    if (lastRes!= -1){
+      here <- (bounds[this] + centers[this])/2
+      reduction <- round((lastRes-thisRes)/lastRes * 100,2)
+      text(x=there, y= here, labels = paste0("MSE Reduced: ",reduction,"%"),pos=4)
     }
+    lastRes<-thisRes
   }
   par(cex=1)
   axis(side=2,tick=TRUE,line=NA,labels =colnames(res)[1:n]        ,at=centers,lwd=0)

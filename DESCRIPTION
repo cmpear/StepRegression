@@ -1,13 +1,12 @@
 Package: StepRegression
-Title: What the Package Does (One Line, Title Case)
+Title: PERFORMS MULTIVARIATE LINEAR REGRESSION ONE VARIABLE (STEP) AT A TIME AND GIVES CHANGING MSEs AS SUCCESSIVE VARIABLES ARE ADDED
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Chris",
+           family = "Pearson",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           email = "cmpear@uw.edu")
+Description: This package performs a multivariate linear regression one variable at a time, and returns a matrix that shows the residuals as one adds successive variables.  Also includes plotting functions for the residual matrix.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

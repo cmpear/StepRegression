@@ -55,6 +55,66 @@ x<-swiss[,c(-1,-6)]
 res<-step_regression(x,y,addIntercept=TRUE)
 res_plotter(res,y,main="Residuals of Fertility by Various Factors")
 ```
+# Under the Hood
+  As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix.  For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables.  Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain.
+  Below I've included a proof, checking each step with the lm() function.  Two avoid too much repetition, several variables will be regressed at once.  For the first step, I've performed a regression on all of the variables in mtcars--one using linear algebra and the second using lm().  The second does two: the y-intercept and "cyl" column.  Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed.  While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once.
+  In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when on uses the lm() function to do the entire regression at once.
+```{r}
+data(mtcars)
+y <- mtcars$mpg
+x <- as.matrix(cbind(1,mtcars[,-1]))
+colnames(x)[1]<-"Intercept"
 
+cat("Linear Algebra\n")
+t(solve(t(x) %*% x) %*% t(x) %*% y)
+x <- x[,-1] #removing the intercept variable, as lm will add its own
+cat("\nBuiltin lm function\n")
+lm (y ~ x)$coefficients
+x <- cbind(c(1),x); colnames(x)[1] <- "Intercept"
+```
+```{r}
+solveY <- solve(t(x[,1:2]) %*% x[,1:2]) %*% t(x[,1:2]) %*% y
 
-
+t(solveY)
+xTemp <- x[,2]
+lm(y ~ xTemp)$coefficients
+```
+```{r}
+cat("Running regression on remaining x variables\n")
+solveX <- solve(t(x[,1:2]) %*% x[,1:2]) %*% t(x[,1:2]) %*% x[,3:ncol(x)]
+solveX
+cat("\nChecking with builtin regression function\n")
+lm (x[,3:ncol(x)] ~ x[,2])$coefficients
+```
+```{r}
+yError <- y - x[,1:2] %*% solveY
+xError <- x[,3:ncol(x)] - x[,1:2] %*% solveX
+solveY <- solve(t(xError[,1:2]) %*% xError[,1:2]) %*% t(xError[,1:2]) %*% yError
+solveX <- solve(t(xError[,1:2]) %*% xError[,1:2]) %*% t(xError[,1:2]) %*% xError[,3:ncol(xError)]
+t(solveY)
+x0 <- x[,2:4]
+lm(y ~ x0)$coefficients[3:4]
+```
+```{r}
+yError <- yError - xError[,1:2] %*% solveY
+xError <- xError[,3:ncol(xError)] - xError[,1:2] %*% solveX
+```
+```{r}
+solveY <- solve(t(xError[,1:6]) %*% xError[,1:6]) %*% t(xError[,1:6]) %*% yError
+solveX <- solve(t(xError[,1:6]) %*% xError[,1:6]) %*% t(xError[,1:6]) %*% xError[,7:ncol(xError)]
+t(solveY)
+x0 <- x[,2:10]
+lm(y ~ x0)$coefficients[5:10]
+```
+```{r}
+yError <- yError - xError[,1:6] %*% solveY
+xError <- xError[,7:ncol(xError)] - xError[,1:6] %*% solveX
+```
+```{r}
+solveY <- solve(t(xError[,1]) %*% xError[,1]) %*% t(xError[,1]) %*% yError
+solveY
+x0 <- x[,2:11]
+lm(y ~ x0)$coefficients[11]
+```
+# Conclusion
+  I hope that you may fine this small package useful.  It is designed to fill a narrow niche, but I hope that it fills it well.

@@ -1,5 +1,5 @@
 ---
-title: "demo"
+title: "Step Regression Demo"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{demo}
@@ -14,13 +14,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Step Regression
+## Step Regression
   This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error.  It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement to help understand the work done by each variable, and perhaps to help teach some of the fundamentals of how regressions work.  In this spirit, the focus is on how the residuals change with each successive variable added to a regression.
 
 ```{r setup}
 library(StepRegression)
 ```
-# Example One: mtcars
+## Example One: mtcars
   Let us take one of the most commonly used built-in datasets in R: mtcars.  First, we'll asign mpg to our response vector y, and the remaining columns to a design matrix x.  Then, we'll call our step_regression function, and plug the results into res_plotter_double() with addIntercept = TRUE.
 ```{r,mtcars}
 data(mtcars)

@@ -85,7 +85,7 @@
 <div id="step-regression" class="section level2">
 <h2 class="hasAnchor">
 <a href="#step-regression" class="anchor"></a>Step Regression</h2>
-<p>This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error. It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement to help understand the work done by each variable, and perhaps to help teach some of the fundamentals of how regressions work. In this spirit, the focus is on how the residuals change with each successive variable added to a regression.</p>
+<p>This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error. It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement. This package helps one show how regressions work, and how each successive variable in the design matrix helps explain the response vector. In this spirit, the focus is on how the residuals change with each successive variable added to a regression.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(StepRegression)</a></code></pre></div>
 </div>
 <div id="example-one-mtcars" class="section level2">
@@ -165,93 +165,139 @@
 <p><img src="demo_files/figure-html/swiss_example-1.png" width="768"></p>
 <pre><code>#&gt; [1] 0.00 0.25 0.50 0.75 1.00</code></pre>
 </div>
-<div id="under-the-hood" class="section level1">
+<div id="under-the-hood-using-mtcars-dataset" class="section level1">
 <h1 class="hasAnchor">
-<a href="#under-the-hood" class="anchor"></a>Under the Hood</h1>
-<p>As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix. For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables. Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain. Below I’ve included a proof, checking each step with the lm() function. Two avoid too much repetition, several variables will be regressed at once. For the first step, I’ve performed a regression on all of the variables in mtcars–one using linear algebra and the second using lm(). The second does two: the y-intercept and “cyl” column. Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed. While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once. In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when on uses the lm() function to do the entire regression at once.</p>
+<a href="#under-the-hood-using-mtcars-dataset" class="anchor"></a>Under the Hood using mtcars dataset</h1>
+<p>As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix. For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables. Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain. Below I’ve included a proof, checking each step with the lm() function. To avoid too much repetition, several variables will be regressed at once. For the first step, I’ve performed a regression on all of the variables in mtcars–one using linear algebra and the second using lm(). The second does two: the y-intercept and “cyl” column. Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed. While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once. In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when one uses the lm() function to do the entire regression at once. However, results will vary between two different uses of stepRegression if one regresses the variables in different orders or different groups. A stepwise regression is more a tool for examining residuals than coefficients. ## EXAMPLE 1: Regress using all independent variables at once</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(mtcars)</a>
 <a class="sourceLine" id="cb9-2" title="2">y &lt;-<span class="st"> </span>mtcars<span class="op">$</span>mpg</a>
 <a class="sourceLine" id="cb9-3" title="3">x &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="dv">1</span>,mtcars[,<span class="op">-</span><span class="dv">1</span>]))</a>
 <a class="sourceLine" id="cb9-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(x)[<span class="dv">1</span>]&lt;-<span class="st">"Intercept"</span></a>
-<a class="sourceLine" id="cb9-5" title="5"></a>
-<a class="sourceLine" id="cb9-6" title="6"><span class="kw"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"Linear Algebra</span><span class="ch">\n</span><span class="st">"</span>)</a>
-<a class="sourceLine" id="cb9-7" title="7"><span class="co">#&gt; Linear Algebra</span></a>
-<a class="sourceLine" id="cb9-8" title="8"><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x) <span class="op">%*%</span><span class="st"> </span>x) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x) <span class="op">%*%</span><span class="st"> </span>y)</a>
-<a class="sourceLine" id="cb9-9" title="9"><span class="co">#&gt;      Intercept        cyl       disp          hp     drat        wt</span></a>
-<a class="sourceLine" id="cb9-10" title="10"><span class="co">#&gt; [1,]  12.30337 -0.1114405 0.01333524 -0.02148212 0.787111 -3.715304</span></a>
-<a class="sourceLine" id="cb9-11" title="11"><span class="co">#&gt;           qsec        vs       am     gear       carb</span></a>
-<a class="sourceLine" id="cb9-12" title="12"><span class="co">#&gt; [1,] 0.8210407 0.3177628 2.520227 0.655413 -0.1994193</span></a>
-<a class="sourceLine" id="cb9-13" title="13">x &lt;-<span class="st"> </span>x[,<span class="op">-</span><span class="dv">1</span>] <span class="co">#removing the intercept variable, as lm will add its own</span></a>
-<a class="sourceLine" id="cb9-14" title="14"><span class="kw"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Builtin lm function</span><span class="ch">\n</span><span class="st">"</span>)</a>
-<a class="sourceLine" id="cb9-15" title="15"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb9-16" title="16"><span class="co">#&gt; Builtin lm function</span></a>
-<a class="sourceLine" id="cb9-17" title="17"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span> (y <span class="op">~</span><span class="st"> </span>x)<span class="op">$</span>coefficients</a>
+<a class="sourceLine" id="cb9-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Linear Algebra Result"</span>)</a>
+<a class="sourceLine" id="cb9-6" title="6"><span class="co">#&gt; [1] "Linear Algebra Result"</span></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x) <span class="op">%*%</span><span class="st"> </span>x) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x) <span class="op">%*%</span><span class="st"> </span>y))</a>
+<a class="sourceLine" id="cb9-8" title="8"><span class="co">#&gt;      Intercept        cyl       disp          hp     drat        wt</span></a>
+<a class="sourceLine" id="cb9-9" title="9"><span class="co">#&gt; [1,]  12.30337 -0.1114405 0.01333524 -0.02148212 0.787111 -3.715304</span></a>
+<a class="sourceLine" id="cb9-10" title="10"><span class="co">#&gt;           qsec        vs       am     gear       carb</span></a>
+<a class="sourceLine" id="cb9-11" title="11"><span class="co">#&gt; [1,] 0.8210407 0.3177628 2.520227 0.655413 -0.1994193</span></a>
+<a class="sourceLine" id="cb9-12" title="12">x &lt;-<span class="st"> </span>x[,<span class="op">-</span><span class="dv">1</span>] <span class="co">#removing the intercept variable, as lm will add its own</span></a>
+<a class="sourceLine" id="cb9-13" title="13"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">''</span>)</a>
+<a class="sourceLine" id="cb9-14" title="14"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb9-15" title="15"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Builtin lm Function Result"</span>)</a>
+<a class="sourceLine" id="cb9-16" title="16"><span class="co">#&gt; [1] "Builtin lm Function Result"</span></a>
+<a class="sourceLine" id="cb9-17" title="17"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span> (y <span class="op">~</span><span class="st"> </span>x)<span class="op">$</span>coefficients)</a>
 <a class="sourceLine" id="cb9-18" title="18"><span class="co">#&gt; (Intercept)        xcyl       xdisp         xhp       xdrat         xwt </span></a>
 <a class="sourceLine" id="cb9-19" title="19"><span class="co">#&gt; 12.30337416 -0.11144048  0.01333524 -0.02148212  0.78711097 -3.71530393 </span></a>
 <a class="sourceLine" id="cb9-20" title="20"><span class="co">#&gt;       xqsec         xvs         xam       xgear       xcarb </span></a>
 <a class="sourceLine" id="cb9-21" title="21"><span class="co">#&gt;  0.82104075  0.31776281  2.52022689  0.65541302 -0.19941925</span></a>
 <a class="sourceLine" id="cb9-22" title="22">x &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">1</span>),x); <span class="kw"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(x)[<span class="dv">1</span>] &lt;-<span class="st"> "Intercept"</span></a></code></pre></div>
+<div id="example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable" class="section level2">
+<h2 class="hasAnchor">
+<a href="#example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable" class="anchor"></a>EXAMPLE 2: Regress two variables twice, all but the last, then the last variable</h2>
+<div id="regress-intercept-and-number-of-cylinders" class="section level3">
+<h3 class="hasAnchor">
+<a href="#regress-intercept-and-number-of-cylinders" class="anchor"></a>Regress intercept and number of cylinders</h3>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>y</a>
-<a class="sourceLine" id="cb10-2" title="2"></a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY)</a>
-<a class="sourceLine" id="cb10-4" title="4"><span class="co">#&gt;      Intercept      cyl</span></a>
-<a class="sourceLine" id="cb10-5" title="5"><span class="co">#&gt; [1,]  37.88458 -2.87579</span></a>
-<a class="sourceLine" id="cb10-6" title="6">xTemp &lt;-<span class="st"> </span>x[,<span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb10-7" title="7"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>xTemp)<span class="op">$</span>coefficients</a>
-<a class="sourceLine" id="cb10-8" title="8"><span class="co">#&gt; (Intercept)       xTemp </span></a>
-<a class="sourceLine" id="cb10-9" title="9"><span class="co">#&gt;    37.88458    -2.87579</span></a></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"Running regression on remaining x variables</span><span class="ch">\n</span><span class="st">"</span>)</a>
-<a class="sourceLine" id="cb11-2" title="2"><span class="co">#&gt; Running regression on remaining x variables</span></a>
-<a class="sourceLine" id="cb11-3" title="3">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)]</a>
-<a class="sourceLine" id="cb11-4" title="4">solveX</a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Linear Algebra Result"</span>)</a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="co">#&gt; [1] "Linear Algebra Result"</span></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY)</a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="co">#&gt;      Intercept      cyl</span></a>
+<a class="sourceLine" id="cb10-6" title="6"><span class="co">#&gt; [1,]  37.88458 -2.87579</span></a>
+<a class="sourceLine" id="cb10-7" title="7"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">""</span>)</a>
+<a class="sourceLine" id="cb10-8" title="8"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Builtin lm Function Result"</span>)</a>
+<a class="sourceLine" id="cb10-10" title="10"><span class="co">#&gt; [1] "Builtin lm Function Result"</span></a>
+<a class="sourceLine" id="cb10-11" title="11">xTemp &lt;-<span class="st"> </span>x[,<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb10-12" title="12"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>xTemp)<span class="op">$</span>coefficients)</a>
+<a class="sourceLine" id="cb10-13" title="13"><span class="co">#&gt; (Intercept)       xTemp </span></a>
+<a class="sourceLine" id="cb10-14" title="14"><span class="co">#&gt;    37.88458    -2.87579</span></a></code></pre></div>
+</div>
+<div id="looking-at-results-of-regressing-intercept-and-cylinders-out-of-the-other-independent-variables" class="section level3">
+<h3 class="hasAnchor">
+<a href="#looking-at-results-of-regressing-intercept-and-cylinders-out-of-the-other-independent-variables" class="anchor"></a>Looking at results of regressing Intercept and Cylinders out of the other independent variables</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)]</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Linear Algebra Result"</span>)</a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="co">#&gt; [1] "Linear Algebra Result"</span></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(solveX)</a>
 <a class="sourceLine" id="cb11-5" title="5"><span class="co">#&gt;                 disp        hp       drat        wt       qsec         vs</span></a>
 <a class="sourceLine" id="cb11-6" title="6"><span class="co">#&gt; Intercept -156.60898 -51.05436  4.8931606 0.5646195 21.5091530  1.8533502</span></a>
 <a class="sourceLine" id="cb11-7" title="7"><span class="co">#&gt; cyl         62.59893  31.95828 -0.2095512 0.4287080 -0.5915803 -0.2288243</span></a>
 <a class="sourceLine" id="cb11-8" title="8"><span class="co">#&gt;                   am       gear       carb</span></a>
 <a class="sourceLine" id="cb11-9" title="9"><span class="co">#&gt; Intercept  1.3097345  4.9469027 -0.1365360</span></a>
 <a class="sourceLine" id="cb11-10" title="10"><span class="co">#&gt; cyl       -0.1460177 -0.2035398  0.4766119</span></a>
-<a class="sourceLine" id="cb11-11" title="11"><span class="kw"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Checking with builtin regression function</span><span class="ch">\n</span><span class="st">"</span>)</a>
-<a class="sourceLine" id="cb11-12" title="12"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb11-13" title="13"><span class="co">#&gt; Checking with builtin regression function</span></a>
-<a class="sourceLine" id="cb11-14" title="14"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span> (x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)] <span class="op">~</span><span class="st"> </span>x[,<span class="dv">2</span>])<span class="op">$</span>coefficients</a>
-<a class="sourceLine" id="cb11-15" title="15"><span class="co">#&gt;                   disp        hp       drat        wt       qsec</span></a>
-<a class="sourceLine" id="cb11-16" title="16"><span class="co">#&gt; (Intercept) -156.60898 -51.05436  4.8931606 0.5646195 21.5091530</span></a>
-<a class="sourceLine" id="cb11-17" title="17"><span class="co">#&gt; x[, 2]        62.59893  31.95828 -0.2095512 0.4287080 -0.5915803</span></a>
-<a class="sourceLine" id="cb11-18" title="18"><span class="co">#&gt;                     vs         am       gear       carb</span></a>
-<a class="sourceLine" id="cb11-19" title="19"><span class="co">#&gt; (Intercept)  1.8533502  1.3097345  4.9469027 -0.1365360</span></a>
-<a class="sourceLine" id="cb11-20" title="20"><span class="co">#&gt; x[, 2]      -0.2288243 -0.1460177 -0.2035398  0.4766119</span></a></code></pre></div>
+<a class="sourceLine" id="cb11-11" title="11"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">''</span>)</a>
+<a class="sourceLine" id="cb11-12" title="12"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb11-13" title="13"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Checking with builtin regression function"</span>)</a>
+<a class="sourceLine" id="cb11-14" title="14"><span class="co">#&gt; [1] "Checking with builtin regression function"</span></a>
+<a class="sourceLine" id="cb11-15" title="15"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span> (x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)] <span class="op">~</span><span class="st"> </span>x[,<span class="dv">2</span>])<span class="op">$</span>coefficients)</a>
+<a class="sourceLine" id="cb11-16" title="16"><span class="co">#&gt;                   disp        hp       drat        wt       qsec</span></a>
+<a class="sourceLine" id="cb11-17" title="17"><span class="co">#&gt; (Intercept) -156.60898 -51.05436  4.8931606 0.5646195 21.5091530</span></a>
+<a class="sourceLine" id="cb11-18" title="18"><span class="co">#&gt; x[, 2]        62.59893  31.95828 -0.2095512 0.4287080 -0.5915803</span></a>
+<a class="sourceLine" id="cb11-19" title="19"><span class="co">#&gt;                     vs         am       gear       carb</span></a>
+<a class="sourceLine" id="cb11-20" title="20"><span class="co">#&gt; (Intercept)  1.8533502  1.3097345  4.9469027 -0.1365360</span></a>
+<a class="sourceLine" id="cb11-21" title="21"><span class="co">#&gt; x[, 2]      -0.2288243 -0.1460177 -0.2035398  0.4766119</span></a></code></pre></div>
+</div>
+<div id="regress-displacement-and-horsepower" class="section level3">
+<h3 class="hasAnchor">
+<a href="#regress-displacement-and-horsepower" class="anchor"></a>Regress displacement and horsepower</h3>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">yError &lt;-<span class="st"> </span>y <span class="op">-</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveY</a>
-<a class="sourceLine" id="cb12-2" title="2">xError &lt;-<span class="st"> </span>x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)] <span class="op">-</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a>
-<a class="sourceLine" id="cb12-3" title="3">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
-<a class="sourceLine" id="cb12-4" title="4">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)]</a>
-<a class="sourceLine" id="cb12-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY)</a>
-<a class="sourceLine" id="cb12-6" title="6"><span class="co">#&gt;             disp          hp</span></a>
-<a class="sourceLine" id="cb12-7" title="7"><span class="co">#&gt; [1,] -0.01883809 -0.01467933</span></a>
-<a class="sourceLine" id="cb12-8" title="8">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>]</a>
-<a class="sourceLine" id="cb12-9" title="9"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">3</span><span class="op">:</span><span class="dv">4</span>]</a>
-<a class="sourceLine" id="cb12-10" title="10"><span class="co">#&gt;      x0disp        x0hp </span></a>
-<a class="sourceLine" id="cb12-11" title="11"><span class="co">#&gt; -0.01883809 -0.01467933</span></a></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">yError &lt;-<span class="st"> </span>yError <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveY</a>
-<a class="sourceLine" id="cb13-2" title="2">xError &lt;-<span class="st"> </span>xError[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)] <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a></code></pre></div>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
-<a class="sourceLine" id="cb14-2" title="2">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">7</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)]</a>
-<a class="sourceLine" id="cb14-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY)</a>
-<a class="sourceLine" id="cb14-4" title="4"><span class="co">#&gt;           drat        wt      qsec        vs       am      gear</span></a>
-<a class="sourceLine" id="cb14-5" title="5"><span class="co">#&gt; [1,] 0.7059008 -4.032142 0.8682852 0.3647043 2.550928 0.5029362</span></a>
-<a class="sourceLine" id="cb14-6" title="6">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">10</span>]</a>
-<a class="sourceLine" id="cb14-7" title="7"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">5</span><span class="op">:</span><span class="dv">10</span>]</a>
-<a class="sourceLine" id="cb14-8" title="8"><span class="co">#&gt;     x0drat       x0wt     x0qsec       x0vs       x0am     x0gear </span></a>
-<a class="sourceLine" id="cb14-9" title="9"><span class="co">#&gt;  0.7059008 -4.0321421  0.8682852  0.3647043  2.5509285  0.5029362</span></a></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">yError &lt;-<span class="st"> </span>yError <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>] <span class="op">%*%</span><span class="st"> </span>solveY</a>
-<a class="sourceLine" id="cb15-2" title="2">xError &lt;-<span class="st"> </span>xError[,<span class="dv">7</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)] <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a></code></pre></div>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
-<a class="sourceLine" id="cb16-2" title="2">solveY</a>
-<a class="sourceLine" id="cb16-3" title="3"><span class="co">#&gt;            [,1]</span></a>
-<a class="sourceLine" id="cb16-4" title="4"><span class="co">#&gt; [1,] -0.1994193</span></a>
-<a class="sourceLine" id="cb16-5" title="5">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">11</span>]</a>
-<a class="sourceLine" id="cb16-6" title="6"><span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">11</span>]</a>
-<a class="sourceLine" id="cb16-7" title="7"><span class="co">#&gt;     x0carb </span></a>
-<a class="sourceLine" id="cb16-8" title="8"><span class="co">#&gt; -0.1994193</span></a></code></pre></div>
+<a class="sourceLine" id="cb12-2" title="2">xError &lt;-<span class="st"> </span>x[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(x)] <span class="op">-</span><span class="st"> </span>x[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
+<a class="sourceLine" id="cb13-2" title="2">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)]</a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Linear Algebra Result"</span>)</a>
+<a class="sourceLine" id="cb13-4" title="4"><span class="co">#&gt; [1] "Linear Algebra Result"</span></a>
+<a class="sourceLine" id="cb13-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY))</a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="co">#&gt;             disp          hp</span></a>
+<a class="sourceLine" id="cb13-7" title="7"><span class="co">#&gt; [1,] -0.01883809 -0.01467933</span></a>
+<a class="sourceLine" id="cb13-8" title="8">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>]</a>
+<a class="sourceLine" id="cb13-9" title="9"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">""</span>)</a>
+<a class="sourceLine" id="cb13-10" title="10"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb13-11" title="11"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Builtin lm Function Result"</span>)</a>
+<a class="sourceLine" id="cb13-12" title="12"><span class="co">#&gt; [1] "Builtin lm Function Result"</span></a>
+<a class="sourceLine" id="cb13-13" title="13"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">3</span><span class="op">:</span><span class="dv">4</span>])</a>
+<a class="sourceLine" id="cb13-14" title="14"><span class="co">#&gt;      x0disp        x0hp </span></a>
+<a class="sourceLine" id="cb13-15" title="15"><span class="co">#&gt; -0.01883809 -0.01467933</span></a></code></pre></div>
+</div>
+<div id="regress-rear-axle-ratio-weight-quarter-mile-time-engine-type-transmission-and-number-of-forward-gears" class="section level3">
+<h3 class="hasAnchor">
+<a href="#regress-rear-axle-ratio-weight-quarter-mile-time-engine-type-transmission-and-number-of-forward-gears" class="anchor"></a>Regress rear axle ratio, weight, quarter-mile time, engine type, transmission, and number of forward gears</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">yError &lt;-<span class="st"> </span>yError <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveY</a>
+<a class="sourceLine" id="cb14-2" title="2">xError &lt;-<span class="st"> </span>xError[,<span class="dv">3</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)] <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
+<a class="sourceLine" id="cb15-2" title="2">solveX &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">7</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)]</a>
+<a class="sourceLine" id="cb15-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Linear Algebra Result"</span>)</a>
+<a class="sourceLine" id="cb15-4" title="4"><span class="co">#&gt; [1] "Linear Algebra Result"</span></a>
+<a class="sourceLine" id="cb15-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(solveY))</a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="co">#&gt;           drat        wt      qsec        vs       am      gear</span></a>
+<a class="sourceLine" id="cb15-7" title="7"><span class="co">#&gt; [1,] 0.7059008 -4.032142 0.8682852 0.3647043 2.550928 0.5029362</span></a>
+<a class="sourceLine" id="cb15-8" title="8">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">10</span>]</a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">""</span>)</a>
+<a class="sourceLine" id="cb15-10" title="10"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb15-11" title="11"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Builtin lm Function Result"</span>)</a>
+<a class="sourceLine" id="cb15-12" title="12"><span class="co">#&gt; [1] "Builtin lm Function Result"</span></a>
+<a class="sourceLine" id="cb15-13" title="13"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">5</span><span class="op">:</span><span class="dv">10</span>])</a>
+<a class="sourceLine" id="cb15-14" title="14"><span class="co">#&gt;     x0drat       x0wt     x0qsec       x0vs       x0am     x0gear </span></a>
+<a class="sourceLine" id="cb15-15" title="15"><span class="co">#&gt;  0.7059008 -4.0321421  0.8682852  0.3647043  2.5509285  0.5029362</span></a></code></pre></div>
+</div>
+<div id="regress-number-of-carburetors" class="section level3">
+<h3 class="hasAnchor">
+<a href="#regress-number-of-carburetors" class="anchor"></a>Regress number of carburetors</h3>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">yError &lt;-<span class="st"> </span>yError <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>] <span class="op">%*%</span><span class="st"> </span>solveY</a>
+<a class="sourceLine" id="cb16-2" title="2">xError &lt;-<span class="st"> </span>xError[,<span class="dv">7</span><span class="op">:</span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span>(xError)] <span class="op">-</span><span class="st"> </span>xError[,<span class="dv">1</span><span class="op">:</span><span class="dv">6</span>] <span class="op">%*%</span><span class="st"> </span>solveX</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1">solveY &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/solve.html">solve</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span>xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/t.html">t</a></span>(xError[,<span class="dv">1</span>]) <span class="op">%*%</span><span class="st"> </span>yError</a>
+<a class="sourceLine" id="cb17-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(solveY)</a>
+<a class="sourceLine" id="cb17-3" title="3"><span class="co">#&gt;            [,1]</span></a>
+<a class="sourceLine" id="cb17-4" title="4"><span class="co">#&gt; [1,] -0.1994193</span></a>
+<a class="sourceLine" id="cb17-5" title="5">x0 &lt;-<span class="st"> </span>x[,<span class="dv">2</span><span class="op">:</span><span class="dv">11</span>]</a>
+<a class="sourceLine" id="cb17-6" title="6"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">""</span>)</a>
+<a class="sourceLine" id="cb17-7" title="7"><span class="co">#&gt; [1] ""</span></a>
+<a class="sourceLine" id="cb17-8" title="8"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="st">"Builting lm Function Result"</span>)</a>
+<a class="sourceLine" id="cb17-9" title="9"><span class="co">#&gt; [1] "Builting lm Function Result"</span></a>
+<a class="sourceLine" id="cb17-10" title="10"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span>(y <span class="op">~</span><span class="st"> </span>x0)<span class="op">$</span>coefficients[<span class="dv">11</span>])</a>
+<a class="sourceLine" id="cb17-11" title="11"><span class="co">#&gt;     x0carb </span></a>
+<a class="sourceLine" id="cb17-12" title="12"><span class="co">#&gt; -0.1994193</span></a></code></pre></div>
+</div>
+</div>
 </div>
 <div id="conclusion" class="section level1">
 <h1 class="hasAnchor">
@@ -272,7 +318,11 @@
       <li><a href="#res_plotter-and-res_plotter_double">res_plotter() and res_plotter_double()</a></li>
       <li><a href="#utility">Utility</a></li>
       <li><a href="#swiss-example-res_plotter">Swiss Example &amp; res_plotter()</a></li>
-      <li><a href="#under-the-hood">Under the Hood</a></li>
+      <li>
+<a href="#under-the-hood-using-mtcars-dataset">Under the Hood using mtcars dataset</a><ul class="nav nav-pills nav-stacked">
+<li><a href="#example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable">EXAMPLE 2: Regress two variables twice, all but the last, then the last variable</a></li>
+      </ul>
+</li>
       <li><a href="#conclusion">Conclusion</a></li>
       </ul>
 </div>

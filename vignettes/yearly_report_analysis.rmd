@@ -1,0 +1,170 @@
+---
+title: "How Important are Yearly Reports?"
+output: html_notebook
+---
+
+# Introduction
+    This notebook is concerned with the question of how much of an important company statistics like earnings-per-share and dividends have on the price of a stock.  One way of viewing the issue is that the health of a company ultimately determines its stock price, so of course this information should have an impact on stock price.  The counterargument is not so much that these numbers do not matter, but that the date a period ends does not matter.  Those following the stock closely can already anticipate the numbers, the yearly report may not be released for two months after the period it is reporting ended, and in the meantime those numbers will be leaking out.  Any impact would accordingly be spread out over a period of three months if not longer.  A third option, which may confound my efforts to measure how important this information is, is that it may vary significantly from company to company and year to year in such a way that one cannot get to a significantly significant with the dataset.
+## Model
+    Our goal is to measure the explanatory power of a company's yearly figures approximately 12 weeks before and after the date these figures are compiled.  In other words, we are constructing a meta-model built atop 25 base models.  Each of these models is using the same independent variables gleaned from the yearly figures to predict a the change in prices over five business days, and these models are arranged to cover 60 businss days before and after each company's year-ending date.  The R-Squared value is then calculated and used as a measure of the reports explanatory power for that five-day period.
+```{r, imports}
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rlang)
+library(readr)
+library(lubridate)
+library(fs)
+library(StepRegression)
+```
+## Our Dataset
+    We are making use of a NYSE Dataset available on Kaggle.  Despite its name, it includes many stocks from the Nasdaq as well as the NYSE.  This is historical data ranging from 2012 to 2016, and covering 501 distinct stocks--though this does include GOOG and GOOGL (Google class C and Google class A shares respectively whose prices differ very little).  The dataset consists of four tables, one of which includes daily price data, and another of which has data on each stock for a given year.  Unfortunately, quarterly reports are not included, limiting the number of useful cases available.
+    Rather than include the full dataset, which would be over 100MB, we are instead simply including those parts we are using.  This notebook is part of a stepwise regression package, so it is important to keep it to a reasonable size.
+```{r, ETL}
+stock_data <- StepRegression:::load_stock_data()
+head(stock_data)
+```
+## Data Overview
+  Simply lookint at some histograms of the data, the dates for period-ending range from late 2012 to early 2017--with most using the end of the year, but a still significant number using dates throught the year.  The closing price of these companies is almost a pareto distribution--hardly uncommon for price data.  Finally, if we look at the 5-business day changes in stock prices (+/- 60 market days from period ending date), these follow a typical normal curve.
+
+```{r, histograms, fig.width = 8, fig.height = 8}
+layout( matrix(data = c(1,1,2,3), nrow = 2, byrow = TRUE) )
+hist(stock_data$date, breaks = 50, main = 'Histogram of Period-Ending Dates', xlab = 'Period Ending')
+hist(stock_data$close, breaks = 'Scott')
+temp = NULL
+for (i in 10:ncol(stock_data) ) temp = unlist(c(temp, stock_data[,i] ))
+#print(temp)
+hist( temp, breaks = 'Scott', xlim = c(-50,50) )
+rm(temp)
+layout(matrix(data = c(1)))
+```
+## Data Cleaning
+  Most of the data comes pre-cleaned, but there is one bit of mess that remains.  The price changes for five-day periods were created using lag and lead functions--but as the data is finite, this means columns near the limits of the data will generate large numbers of NAs.  However, these NAs are orderly, so that if a column looking 5 business days back has 2 NAs, another column looking 10 business days back will have 7, and so on until 60 business days with 57 NAs.  Thus we have two options here: simply drop all NAs, or depending on the model drop the NAs.  For the sake of consistency the former option has been chosen, though at the cost of wasting more data.
+```{r}
+before <- nrow(stock_data)
+stock_data <- stock_data %>%
+  drop_na()
+print(paste('Dropped', before - nrow(stock_data), 'rows' ) )
+```
+
+
+```{r}
+x <- stock_data[,c(1:7)]
+x = as.matrix(x)
+y <- stock_data$plus5_days
+y = as.vector(y)
+```
+
+```{r, step regression, fig.width=8, fig.height=16}
+res_matrix <- step_regression(x = x, y = y)
+res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change')
+```
+## Variable Selection
+    Looking at the results from the Step Regression Package, earnings per share and the profit margin are the two most significant variables.  The others, once additional variables are added, have little to no effect on the Mean Squared Error.  Moving forward as we do regression analysis, we'll stick to these independent variables and an intercept.
+
+```{r, winnow data}
+stock_data <- stock_data %>%
+  select( - Profit_Margin, - Quick_Ratio, - Pre_Tax_ROE, - Cash_Ratio, - After_Tax_ROE)
+head(stock_data)
+```
+
+```{r, start lag-lead models}
+r_squared_values <- NULL
+x_plot <- c(seq(from = -60, to = 60, by = 5) )
+```
+
+```{r}
+x <- as.matrix(stock_data[,c('Pre_Tax_Margin','Earnings_Per_Share')])
+for (i in 6:ncol(stock_data) ){
+  print(i - 9)
+  y <- as.vector(unlist(stock_data[,i]))
+  r_squared_values <- c(r_squared_values, sum( (y - x %*% solve(t(x) %*% x) %*% t(x) %*% y)^2) )
+}
+print(length(r_squared_values) )
+print(length(x_plot) )
+model_res <- cbind(x_plot, r_squared_values)
+```
+
+
+```{r, add lag models}
+# should have automated with a function
+model_m60 = lm(stock_data$minus60_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m60)$r.squared )
+
+model_m55 = lm(stock_data$minus55_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m55)$r.squared )
+model_m50 = lm(stock_data$minus50_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m50)$r.squared )
+
+model_m45 = lm(stock_data$minus45_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m45)$r.squared )
+model_m40 = lm(stock_data$minus40_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m40)$r.squared )
+
+model_m35 = lm(stock_data$minus35_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m35)$r.squared )
+model_m30 = lm(stock_data$minus30_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m30)$r.squared )
+
+model_m25 = lm(stock_data$minus25_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m25)$r.squared )
+model_m20 = lm(stock_data$minus20_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m20)$r.squared )
+
+model_m15 = lm(stock_data$minus15_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m15)$r.squared )
+model_m10 = lm(stock_data$minus10_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m10)$r.squared )
+
+model_m5 = lm(stock_data$minus5_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m5)$r.squared )
+model_m0 = lm(stock_data$minus0_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_m0)$r.squared )
+```
+
+
+```{r, add lead models}
+model_p5 = lm(stock_data$plus5_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p5)$r.squared )
+
+model_p10 = lm(stock_data$plus10_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p10)$r.squared )
+model_p15 = lm(stock_data$plus15_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p15)$r.squared )
+
+model_p20 = lm(stock_data$plus20_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p20)$r.squared )
+model_p25 = lm(stock_data$plus25_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p25)$r.squared )
+
+model_p30 = lm(stock_data$plus30_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p30)$r.squared )
+model_p35 = lm(stock_data$plus35_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p35)$r.squared )
+
+model_p40 = lm(stock_data$plus40_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p40)$r.squared )
+model_p45 = lm(stock_data$plus45_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p45)$r.squared )
+
+model_p50 = lm(stock_data$plus50_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p50)$r.squared )
+model_p55 = lm(stock_data$plus55_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p55)$r.squared )
+
+model_p60 = lm(stock_data$plus60_days ~ stock_data$Pre_Tax_Margin + stock_data$Earnings_Per_Share)
+r_squared_values <- c(r_squared_values, summary(model_p60)$r.squared )
+```
+## R-Squared Over Time
+  Using earnings per share and the pre-tax profit margin, I constructed a series of models using the same independent variables, earnings per share and pre-tax profit margin, but each attempting to predict a change in price over a different 5-business day period.  These in turn give us the real variable we are interested in: the R-Squared--in other words, how well two key variables from a yearly report measure the change over a five-day period.  Peaks should indicate when these figures were most important to the market.
+  Looking at the plot, we see that R-Squared values have three peaks: one at -40-business days, another at 5-business days, and the highest at 30-business days--or 8-weeks before, 1-week after, and 6-weeks after the yearly period ended.  The 1-Week figure is likely caused by those most knowledgeable of the stock who can access or figure out the contents of the yearly report earlier, while the higher 6-week peak is likely related to the formal release of the reprot (noteably, week-7 and week-8 are the second and third highest figures).  The eight-weeks prior peak on the other hand is less clear, but could be related to third-quarter reports, which have figures anticipatory of the yearly report.
+
+```{r}
+plot(x_plot, r_squared_values, type = 'l', col = 'purple', lwd = 2)
+abline(v = 0, col = 'red')
+abline(v = -40, col = 'blue')
+abline(v = 5, col = 'blue')
+abline(v = 30, col = 'blue')
+```
+## Conclusion
+  

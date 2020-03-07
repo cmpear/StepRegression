@@ -48,7 +48,6 @@ res_plotter <- function(res,y,xlab="y-values",ylab="residuals",...){
   labels <- range(y)
   labels <- c(labels[1], (labels[1]*3 + labels[2]*1)/4, (labels[1] + labels[2])/2, (labels[1] * 1 + labels[2] * 3)/4, labels[2])
   here <- (labels - labels[1])/(labels[5]-labels[1])
-  print(here)
   axis(side=1,tick=TRUE,line=NA,at=here,col.ticks='black',labels=round(labels,3))
 }
 
@@ -126,6 +125,5 @@ res_plotter_double<-function(res,y,xlab="y-values",ylab="residuals",...){
   labels <- c(labels,labels)
   here <- (labels - labels[1])/(labels[5]-labels[1])/2
   here <- here + c(rep(lb,5),rep(mr,5))
-  print(here)
   axis(side=1,tick=TRUE,line=NA,at=here,col.ticks='black',labels=round(labels,3))
 }

@@ -76,14 +76,13 @@ print(paste('Dropped', before - nrow(stock_data), 'rows.' ) )
 To choose variables for the sub-models, this notebook uses a stepwise regression to find which figures have the most explanatory power for 5-day price changes.  The step_regression function makes a rough estimate of which variables in a design matrix are most sigificant, then regresses them out one-by-one and calculates how the residuals change.  We then plot the changing residuals with their Mean-Squared Error and how much each subsequent variable reduces the MSE.
   
 Looking at the results, there are two variables that stand out: earnings per share and the pre-tax profit margin.  Once these two are included, none of the other variables explains so much as 1% of the the variation.  Moreover, these are clearly important variables: the question was simply whether they were more or less important than the post-tax profit margin or the pre/post-tax return on equity.  Thus for our sub-models, we will be using these two and no others.
-  
-```{r, StepRegression, fig.width=8, fig.height=16}
+```{r, Variable_Selection, fig.width=8, fig.height=16}
 x <- stock_data[,c(1:7)]
 x = as.matrix(x)
 y <- stock_data$plus5_days
 y = as.vector(y)
 res_matrix <- StepRegression::step_regression(x = x, y = y)
-StepRegression::res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change', main = 'Step-Regression on Yearly Report Figures to Predict 5-Day Price Change')
+StepRegression::res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change', main = 'Stepwise Regression on Yearly Report Figures to Predict 5-Day Price Change')
 ```
 
 ```{r, winnow_data}
@@ -109,7 +108,8 @@ head(model_res)
 ## R-Squared Over Time
 
 Using earnings per share and the pre-tax profit margin, I constructed a series of models using the same independent variables, earnings per share and pre-tax profit margin, but each attempting to predict a change in price over a different 5-business day period.  These in turn give us the real variable we are interested in: the R-Squared--in other words, how well two key variables from a yearly report measure the change over a five-day period.  Peaks should indicate when these figures were most important to the market.
-```{r, CreateVisual}
+
+```{r, Plot_R2}
 plot(model_res, type = 'l', col = 'purple', lwd = 2, main = 'Performance of Different Models', xlab = 'Days Before and Ahead', ylab = 'R-Squared Values')
 abline(v = 0, col = 'red')
 abline(v = -40, col = 'blue')

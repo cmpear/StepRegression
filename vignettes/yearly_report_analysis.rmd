@@ -119,4 +119,4 @@ abline(v = 30, col = 'blue')
 
 ## Conclusion
 
-Looking at the plot, we see that R-Squared values have three peaks: one at -40-business days, another at 5-business days, and the highest at 30-business days.  The first two peaks are relatively low, but assuming they were significant, then the -40-day peak is likely the result of numbers in the 3rd-quarter reports that are anticipatory of the yearly report, while the 5-day peak could be a result of early estimates of the numbers in the yearly report. 
+Looking at the plot, we see the R-Squared values have three peaks: one at -40-business days, another at 5-business days, and the highest at 30-business days.  The first two peaks are relatively low, but assuming they were significant, then the -40-day peak is likely the result of numbers in the 3rd-quarter reports that are anticipatory of the yearly report, while the 5-day peak could be a result of early estimates of the numbers in the yearly report. 

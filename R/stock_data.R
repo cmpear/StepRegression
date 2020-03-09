@@ -2,10 +2,11 @@
 #' @description loads stock data for use in program
 #' @return the stock data
 #' @importFrom system file
+#' @importFrom readr read_csv
 #' @export
 load_stock_data <- function(){
   target_path = system.file('extdata', 'stock_data.csv', package = 'StepRegression')
-  return(read_csv(target_path))
+  return(readr::read_csv(target_path))
 }
 
 #' stock_data

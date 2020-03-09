@@ -34,11 +34,11 @@ We are making use of a NYSE Dataset available on Kaggle.  Despite its name, it i
 
 The variables we are concentrating on for our sub-models will be those that are already normalized for a company's size.  Thus such numbers as the earnings per share, cash ratio, and profit margins.  Rather than include the full dataset, which would be over 100MB, we are instead doing most of the cleaning and wrangling in a seperate program before loading it.
     
-```{r message=FALSE, warning=FALSE}
+```{r, get_data, message=FALSE, warning=FALSE}
 stock_data <- StepRegression:::load_stock_data()
 ```
 
-```{r, check data}
+```{r, check_data}
 head(stock_data)
 ```
 
@@ -65,7 +65,7 @@ While most of the data becomes clean, but there is one piece that remains to be 
   
 So when looking at our sub-models, there is a question of whether we should maximize the data available at the cost of some models having more data to work with than others (inconsistency), or whether we should prioritize consistency at the cost of dropping more data.  Here, we are going with the latter option.
   
-```{r, data cleaning}
+```{r, data_cleaning}
 before <- nrow(stock_data)
 stock_data <- stock_data %>%
   tidyr::drop_na()
@@ -77,7 +77,7 @@ To choose variables for the sub-models, this notebook uses a stepwise regression
   
 Looking at the results, there are two variables that stand out: earnings per share and the pre-tax profit margin.  Once these two are included, none of the other variables explains so much as 1% of the the variation.  Moreover, these are clearly important variables: the question was simply whether they were more or less important than the post-tax profit margin or the pre/post-tax return on equity.  Thus for our sub-models, we will be using these two and no others.
   
-```{r, step regression, fig.width=8, fig.height=16}
+```{r, step_regression, fig.width=8, fig.height=16}
 x <- stock_data[,c(1:7)]
 x = as.matrix(x)
 y <- stock_data$plus5_days
@@ -86,14 +86,14 @@ res_matrix <- StepRegression::step_regression(x = x, y = y)
 StepRegression::res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change', main = 'Step-Regression on Yearly Report Figures to Predict 5-Day Price Change')
 ```
 
-```{r, winnow data}
+```{r, winnow_data}
 stock_data <- stock_data %>%
   dplyr::select( - .data$Profit_Margin, - .data$Quick_Ratio, - .data$Pre_Tax_ROE,
                  - .data$Cash_Ratio, - .data$After_Tax_ROE)
 head(stock_data)
 ```
 
-```{r, get R-Squared Values}
+```{r, get_R-Squared_Values}
 r_squared_values <- NULL
 day_shift <- c(seq(from = -60, to = 60, by = 5) )
 
@@ -109,7 +109,7 @@ head(model_res)
 ## R-Squared Over Time
 
 Using earnings per share and the pre-tax profit margin, I constructed a series of models using the same independent variables, earnings per share and pre-tax profit margin, but each attempting to predict a change in price over a different 5-business day period.  These in turn give us the real variable we are interested in: the R-Squared--in other words, how well two key variables from a yearly report measure the change over a five-day period.  Peaks should indicate when these figures were most important to the market.
-```{r, create visual}
+```{r, create_visual}
 plot(model_res, type = 'l', col = 'purple', lwd = 2, main = 'Performance of Different Models', xlab = 'Days Before and Ahead', ylab = 'R-Squared Values')
 abline(v = 0, col = 'red')
 abline(v = -40, col = 'blue')

@@ -1,6 +1,10 @@
 ---
 title: "How Important are Yearly Reports?"
 output: html_notebook
+vignette: >
+  %\VignetteIndexEntry{yearly_report_analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 # Introduction

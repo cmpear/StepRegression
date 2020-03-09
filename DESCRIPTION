@@ -22,5 +22,6 @@ Suggests:
     dplyr,
     rlang,
     tidyr,
-    fs
+    fs,
+    readr
 VignetteBuilder: knitr

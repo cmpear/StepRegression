@@ -98,14 +98,12 @@
 <h2 class="hasAnchor">
 <a href="#sub-models" class="anchor"></a>Sub-Models</h2>
 <p>For each day we wish to R-Squared, we need a model. For these models, the dependent variable is the change in stock price compared to five business days earlier, and for independent variables we will use whichever two figures from our data are found to be the most important five business days after the year-ending period.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(stringr)</a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(dplyr)</a>
-<a class="sourceLine" id="cb1-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(tidyr)</a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(rlang)</a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(readr)</a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(lubridate)</a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(fs)</a>
-<a class="sourceLine" id="cb1-8" title="8"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(StepRegression)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(dplyr)</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(tidyr)</a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(rlang)</a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(readr)</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(fs)</a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(StepRegression)</a></code></pre></div>
 </div>
 <div id="our-dataset" class="section level2">
 <h2 class="hasAnchor">
@@ -157,7 +155,7 @@
 <p>So when looking at our sub-models, there is a question of whether we should maximize the data available at the cost of some models having more data to work with than others (inconsistency), or whether we should prioritize consistency at the cost of dropping more data. Here, we are going with the latter option.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">before &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span>(stock_data)</a>
 <a class="sourceLine" id="cb7-2" title="2">stock_data &lt;-<span class="st"> </span>stock_data <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="st">  </span><span class="kw">drop_na</span>()</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="st">  </span>tidyr<span class="op">::</span><span class="kw"><a href="https://tidyr.tidyverse.org/reference/drop_na.html">drop_na</a></span>()</a>
 <a class="sourceLine" id="cb7-4" title="4"><span class="kw"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="st">'Dropped'</span>, before <span class="op">-</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span>(stock_data), <span class="st">'rows.'</span> ) )</a></code></pre></div>
 <pre><code>## [1] "Dropped 497 rows."</code></pre>
 </div>
@@ -170,12 +168,13 @@
 <a class="sourceLine" id="cb9-2" title="2">x =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span>(x)</a>
 <a class="sourceLine" id="cb9-3" title="3">y &lt;-<span class="st"> </span>stock_data<span class="op">$</span>plus5_days</a>
 <a class="sourceLine" id="cb9-4" title="4">y =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span>(y)</a>
-<a class="sourceLine" id="cb9-5" title="5">res_matrix &lt;-<span class="st"> </span><span class="kw"><a href="../reference/step_regression.html">step_regression</a></span>(<span class="dt">x =</span> x, <span class="dt">y =</span> y)</a>
-<a class="sourceLine" id="cb9-6" title="6"><span class="kw"><a href="../reference/res_plotter_double.html">res_plotter_double</a></span>(<span class="dt">res =</span> res_matrix, <span class="dt">y =</span> y, <span class="dt">xlab =</span> <span class="st">'5-Day Price Change'</span>, <span class="dt">main =</span> <span class="st">'Step-Regression on Yearly Report Figures to Predict 5-Day Price Change'</span>)</a></code></pre></div>
-<p><img src="yearly_report_analysis_files/figure-html/step%20regression-1.png" width="768"></p>
+<a class="sourceLine" id="cb9-5" title="5">res_matrix &lt;-<span class="st"> </span>StepRegression<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/StepRegression/man/step_regression.html">step_regression</a></span>(<span class="dt">x =</span> x, <span class="dt">y =</span> y)</a>
+<a class="sourceLine" id="cb9-6" title="6">StepRegression<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/StepRegression/man/res_plotter_double.html">res_plotter_double</a></span>(<span class="dt">res =</span> res_matrix, <span class="dt">y =</span> y, <span class="dt">xlab =</span> <span class="st">'5-Day Price Change'</span>, <span class="dt">main =</span> <span class="st">'Stepwise Regression on Yearly Report Figures to Predict 5-Day Price Change'</span>)</a></code></pre></div>
+<p><img src="yearly_report_analysis_files/figure-html/Variable_Selection-1.png" width="768"></p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">stock_data &lt;-<span class="st"> </span>stock_data <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb10-2" title="2"><span class="st">  </span><span class="kw">select</span>( <span class="op">-</span><span class="st"> </span>Profit_Margin, <span class="op">-</span><span class="st"> </span>Quick_Ratio, <span class="op">-</span><span class="st"> </span>Pre_Tax_ROE, <span class="op">-</span><span class="st"> </span>Cash_Ratio, <span class="op">-</span><span class="st"> </span>After_Tax_ROE)</a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(stock_data)</a></code></pre></div>
+<a class="sourceLine" id="cb10-2" title="2"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>( <span class="op">-</span><span class="st"> </span>.data<span class="op">$</span>Profit_Margin, <span class="op">-</span><span class="st"> </span>.data<span class="op">$</span>Quick_Ratio, <span class="op">-</span><span class="st"> </span>.data<span class="op">$</span>Pre_Tax_ROE,</a>
+<a class="sourceLine" id="cb10-3" title="3">                 <span class="op">-</span><span class="st"> </span>.data<span class="op">$</span>Cash_Ratio, <span class="op">-</span><span class="st"> </span>.data<span class="op">$</span>After_Tax_ROE)</a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(stock_data)</a></code></pre></div>
 <pre><code>## # A tibble: 6 x 30
 ##   Pre_Tax_Margin Earnings_Per_Sh~ symbol date       close minus60_days
 ##            &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt;  &lt;date&gt;     &lt;dbl&gt;        &lt;dbl&gt;
@@ -220,12 +219,12 @@
 <a class="sourceLine" id="cb14-3" title="3"><span class="kw"><a href="https://rdrr.io/r/graphics/abline.html">abline</a></span>(<span class="dt">v =</span> <span class="dv">-40</span>, <span class="dt">col =</span> <span class="st">'blue'</span>)</a>
 <a class="sourceLine" id="cb14-4" title="4"><span class="kw"><a href="https://rdrr.io/r/graphics/abline.html">abline</a></span>(<span class="dt">v =</span> <span class="dv">5</span>, <span class="dt">col =</span> <span class="st">'blue'</span>)</a>
 <a class="sourceLine" id="cb14-5" title="5"><span class="kw"><a href="https://rdrr.io/r/graphics/abline.html">abline</a></span>(<span class="dt">v =</span> <span class="dv">30</span>, <span class="dt">col =</span> <span class="st">'blue'</span>)</a></code></pre></div>
-<p><img src="yearly_report_analysis_files/figure-html/create%20visual-1.png" width="700"></p>
+<p><img src="yearly_report_analysis_files/figure-html/Plot_R2-1.png" width="700"></p>
 </div>
 <div id="conclusion" class="section level2">
 <h2 class="hasAnchor">
 <a href="#conclusion" class="anchor"></a>Conclusion</h2>
-<p>Looking at the plot, we see that R-Squared values have three peaks: one at -40-business days, another at 5-business days, and the highest at 30-business days. The first two peaks are relatively low, but assuming they were significant, then the -40-day peak is likely the result of numbers in the 3rd-quarter reports that are anticipatory of the yearly report, while the 5-day peak could be a result of early estimates of the numbers in the yearly report.</p>
+<p>Looking at the plot, we see the R-Squared values have three peaks: one at -40-business days, another at 5-business days, and the highest at 30-business days. The first two peaks are relatively low, but assuming they were significant, then the -40-day peak is likely the result of numbers in the 3rd-quarter reports that are anticipatory of the yearly report, while the 5-day peak could be a result of early estimates of the numbers in the yearly report.</p>
 </div>
 </div>
   </div>

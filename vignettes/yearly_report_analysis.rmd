@@ -20,12 +20,10 @@ There is a statistical figure that specifically measures the explanatory power o
 For each day we wish to  R-Squared, we need a model.  For these models, the dependent variable is the change in stock price compared to five business days earlier, and for independent variables we will use whichever two figures from our data are found to be the most important five business days after the year-ending period.
     
 ```{r, imports, message=FALSE, warning=FALSE}
-library(stringr)
 library(dplyr)
 library(tidyr)
 library(rlang)
 library(readr)
-library(lubridate)
 library(fs)
 library(StepRegression)
 ```
@@ -70,7 +68,7 @@ So when looking at our sub-models, there is a question of whether we should maxi
 ```{r, data cleaning}
 before <- nrow(stock_data)
 stock_data <- stock_data %>%
-  drop_na()
+  tidyr::drop_na()
 print(paste('Dropped', before - nrow(stock_data), 'rows.' ) )
 ```
 ## Step Regression and Variable Selection
@@ -84,13 +82,14 @@ x <- stock_data[,c(1:7)]
 x = as.matrix(x)
 y <- stock_data$plus5_days
 y = as.vector(y)
-res_matrix <- step_regression(x = x, y = y)
-res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change', main = 'Step-Regression on Yearly Report Figures to Predict 5-Day Price Change')
+res_matrix <- StepRegression::step_regression(x = x, y = y)
+StepRegression::res_plotter_double(res = res_matrix, y = y, xlab = '5-Day Price Change', main = 'Step-Regression on Yearly Report Figures to Predict 5-Day Price Change')
 ```
 
 ```{r, winnow data}
 stock_data <- stock_data %>%
-  select( - Profit_Margin, - Quick_Ratio, - Pre_Tax_ROE, - Cash_Ratio, - After_Tax_ROE)
+  dplyr::select( - .data$Profit_Margin, - .data$Quick_Ratio, - .data$Pre_Tax_ROE,
+                 - .data$Cash_Ratio, - .data$After_Tax_ROE)
 head(stock_data)
 ```
 

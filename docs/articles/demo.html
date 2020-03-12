@@ -105,10 +105,10 @@
 <a class="sourceLine" id="cb2-8" title="8"><span class="co">#&gt; Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2</span></a>
 <a class="sourceLine" id="cb2-9" title="9"><span class="co">#&gt; Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</span></a></code></pre></div>
 </div>
-<div id="order-and-mse" class="section level1">
+<div id="order-and-sse" class="section level1">
 <h1 class="hasAnchor">
-<a href="#order-and-mse" class="anchor"></a>Order and MSE</h1>
-<p>By default, the columns of the residuals matrix are ordered so that the intercept is in the first column, and the most significant variables come first. In this case, significance is determined by which columns give the lowest MSE in predicting the response vector when alone. This does not, however, mean that they will be significant when applied alongside other variables.</p>
+<a href="#order-and-sse" class="anchor"></a>Order and SSE</h1>
+<p>By default, the columns of the residuals matrix are ordered so that the intercept is in the first column, and the most significant variables come first. In this case, significance is determined by which columns give the lowest SSE in predicting the response vector when alone. This does not, however, mean that they will be significant when applied alongside other variables.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">y&lt;-mtcars<span class="op">$</span>mpg</a>
 <a class="sourceLine" id="cb3-2" title="2">x&lt;-mtcars[,<span class="op">-</span><span class="dv">1</span>]</a>
 <a class="sourceLine" id="cb3-3" title="3">res&lt;-StepRegression<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/StepRegression/man/step_regression.html">step_regression</a></span>(x,y,<span class="dt">addIntercept=</span><span class="ot">TRUE</span>)</a>
@@ -131,9 +131,15 @@
 <div id="res_plotter-and-res_plotter_double" class="section level1">
 <h1 class="hasAnchor">
 <a href="#res_plotter-and-res_plotter_double" class="anchor"></a>res_plotter() and res_plotter_double()</h1>
-<p>There are two built-in plotting functions for this package: res_plotter() and res_plotter_double(). They both create residuals vs values sub-plots for each variable, with each corner containing the MSE after each variable is added to the regression, and the percent by which each variable reduced the MSE. The only difference between the two functions is that res_plotter_double has two columns of plots.</p>
+<p>There are two built-in plotting functions for this package: res_plotter() and res_plotter_double(). They both create residuals vs values sub-plots for each variable, with each corner containing the SSE after each variable is added to the regression, and the percent by which each variable reduced the SSE. The only difference between the two functions is that res_plotter_double has two columns of plots.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw"><a href="../reference/res_plotter_double.html">res_plotter_double</a></span>(res,y,<span class="dt">main=</span><span class="st">"Residuals v MPG for Various Factors"</span>)</a></code></pre></div>
-<p><img src="demo_files/figure-html/mtcars_visual-1.png" width="768"> # Utility This function has two main uses. First, it helps identify which variables to include in a multivariate regression. Looking at the mtcars visual, it is interesting to note that several variables that seemed important when examined in isolation are found to do little to imporve the MSE when others are included as well. The “disp” (displacement), “drat” (rear axle ratio), “vs” (v-shape vs inline), “carb” (number of carburetors) and “gear” all turned out to be less important than they initially seemed, while the opposite could be said for “hp” (horsepower), “am” (manual vs automatic), and “qsec” (quarter mile time). The second use is helping to understand how regressions work. Rather than regress all of the variables together, step_regression regresses each out of y and the remaining x variables. Each step is essentially applying regression to the residuals leftover.</p>
+<p><img src="demo_files/figure-html/mtcars_visual-1.png" width="768"></p>
+</div>
+<div id="utility" class="section level1">
+<h1 class="hasAnchor">
+<a href="#utility" class="anchor"></a>Utility</h1>
+<p>This function has two main uses. First, it helps identify which variables to include in a multivariate regression. Looking at the mtcars visual, it is interesting to note that several variables that seemed important when examined in isolation are found to do little to improve the SSE when others are included as well. The “disp” (displacement), “drat” (rear axle ratio), “vs” (v-shape vs inline), “carb” (number of carburetors) and “gear” all turned out to be less important than they initially seemed, while the opposite could be said for “hp” (horsepower), “am” (manual vs automatic), and “qsec” (quarter mile time).</p>
+<p>The second use is helping to understand how regressions work. Rather than regress all of the variables together, step_regression regresses each out of y and the remaining x variables. Each step is essentially applying regression to the residuals leftover.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(swiss)</a>
 <a class="sourceLine" id="cb5-2" title="2"><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(swiss)</a>
 <a class="sourceLine" id="cb5-3" title="3"><span class="co">#&gt;              Fertility Agriculture Examination Education Catholic</span></a>
@@ -159,7 +165,17 @@
 <a class="sourceLine" id="cb6-2" title="2">x&lt;-swiss[,<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="op">-</span><span class="dv">1</span>,<span class="op">-</span><span class="dv">6</span>)]</a>
 <a class="sourceLine" id="cb6-3" title="3">res&lt;-<span class="kw"><a href="../reference/step_regression.html">step_regression</a></span>(x,y,<span class="dt">addIntercept=</span><span class="ot">TRUE</span>)</a>
 <a class="sourceLine" id="cb6-4" title="4"><span class="kw"><a href="../reference/res_plotter.html">res_plotter</a></span>(res,y,<span class="dt">main=</span><span class="st">"Residuals of Fertility by Various Factors"</span>)</a></code></pre></div>
-<p><img src="demo_files/figure-html/swiss_example-1.png" width="768"> # Under the Hood using mtcars dataset As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix. For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables. Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain. Below I’ve included a proof, checking each step with the lm() function. To avoid too much repetition, several variables will be regressed at once. For the first step, I’ve performed a regression on all of the variables in mtcars–one using linear algebra and the second using lm(). The second does two: the y-intercept and “cyl” column. Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed. While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once. In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when one uses the lm() function to do the entire regression at once. However, results will vary between two different uses of stepRegression if one regresses the variables in different orders or different groups. A stepwise regression is more a tool for examining residuals than coefficients. ## EXAMPLE 1: Regress using all independent variables at once</p>
+<p><img src="demo_files/figure-html/swiss_example-1.png" width="768"></p>
+</div>
+<div id="under-the-hood-using-mtcars-dataset" class="section level1">
+<h1 class="hasAnchor">
+<a href="#under-the-hood-using-mtcars-dataset" class="anchor"></a>Under the Hood using mtcars dataset</h1>
+<p>As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix. For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables. Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain.</p>
+<p>Below I’ve included a proof, checking each step with the lm() function. To avoid too much repetition, several variables will be regressed at once. For the first step, I’ve performed a regression on all of the variables in mtcars–one using linear algebra and the second using lm(). The second does two: the y-intercept and “cyl” column. Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed. While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once.</p>
+<p>In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when one uses the lm() function to do the entire regression at once. However, results will vary between two different uses of stepRegression if one regresses the variables in different orders or different groups. A stepwise regression is more a tool for examining residuals than coefficients.</p>
+<div id="example-1-regress-using-all-independent-variables-at-once" class="section level2">
+<h2 class="hasAnchor">
+<a href="#example-1-regress-using-all-independent-variables-at-once" class="anchor"></a>EXAMPLE 1: Regress using all independent variables at once</h2>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(mtcars)</a>
 <a class="sourceLine" id="cb7-2" title="2">y &lt;-<span class="st"> </span>mtcars<span class="op">$</span>mpg</a>
 <a class="sourceLine" id="cb7-3" title="3">x &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="dv">1</span>,mtcars[,<span class="op">-</span><span class="dv">1</span>]))</a>
@@ -182,6 +198,7 @@
 <a class="sourceLine" id="cb7-20" title="20"><span class="co">#&gt;       xqsec         xvs         xam       xgear       xcarb </span></a>
 <a class="sourceLine" id="cb7-21" title="21"><span class="co">#&gt;  0.82104075  0.31776281  2.52022689  0.65541302 -0.19941925</span></a>
 <a class="sourceLine" id="cb7-22" title="22">x &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">1</span>),x); <span class="kw"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(x)[<span class="dv">1</span>] &lt;-<span class="st"> "Intercept"</span></a></code></pre></div>
+</div>
 <div id="example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable" class="section level2">
 <h2 class="hasAnchor">
 <a href="#example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable" class="anchor"></a>EXAMPLE 2: Regress two variables twice, all but the last, then the last variable</h2>
@@ -305,11 +322,14 @@
       <ul class="nav nav-pills nav-stacked">
 <li><a href="#step-regression">Step Regression</a></li>
       <li><a href="#example-one-mtcars">Example One: mtcars</a></li>
-      <li><a href="#order-and-mse">Order and MSE</a></li>
+      <li><a href="#order-and-sse">Order and SSE</a></li>
       <li><a href="#res_plotter-and-res_plotter_double">res_plotter() and res_plotter_double()</a></li>
+      <li><a href="#utility">Utility</a></li>
+      <li><a href="#swiss-example-res_plotter">Swiss Example &amp; res_plotter()</a></li>
       <li>
-<a href="#swiss-example-res_plotter">Swiss Example &amp; res_plotter()</a><ul class="nav nav-pills nav-stacked">
-<li><a href="#example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable">EXAMPLE 2: Regress two variables twice, all but the last, then the last variable</a></li>
+<a href="#under-the-hood-using-mtcars-dataset">Under the Hood using mtcars dataset</a><ul class="nav nav-pills nav-stacked">
+<li><a href="#example-1-regress-using-all-independent-variables-at-once">EXAMPLE 1: Regress using all independent variables at once</a></li>
+      <li><a href="#example-2-regress-two-variables-twice-all-but-the-last-then-the-last-variable">EXAMPLE 2: Regress two variables twice, all but the last, then the last variable</a></li>
       </ul>
 </li>
       <li><a href="#conclusion">Conclusion</a></li>

@@ -106,11 +106,11 @@ res_plotter_double<-function(res,y,xlab="y-values",ylab="residuals",...){
            col=col[i])
     par(cex=0.8)
     thisRes <- round(sum((res[,i])^2),3)
-    text(x=there,y=here,labels=paste("MSE:",thisRes), pos = 4)
+    text(x=there,y=here,labels=paste("SSE:",thisRes), pos = 4)
     if (lastRes!= -1){
       here <- (bounds[this] + centers[this])/2
       reduction <- round((lastRes-thisRes)/lastRes * 100,2)
-      text(x=there, y= here, labels = paste0("MSE Reduced: ",reduction,"%"),pos=4)
+      text(x=there, y= here, labels = paste0("SSE Reduced: ",reduction,"%"),pos=4)
     }
     lastRes<-thisRes
   }

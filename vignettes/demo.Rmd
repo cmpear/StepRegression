@@ -15,51 +15,72 @@ knitr::opts_chunk$set(
 ```
 
 ## Step Regression
-  This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error.  It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement.  This package helps one show how regressions work, and how each successive variable in the design matrix helps explain the response vector.  In this spirit, the focus is on how the residuals change with each successive variable added to a regression.
+
+This package is designed to show how adding successive predictors to a regression modifies the residuals and mean-squared error.  It is not meant as a replacement for the standard lm(y ~ x1, x2, x3) function, but instead a supplement.  This package helps one show how regressions work, and how each successive variable in the design matrix helps explain the response vector.  In this spirit, the focus is on how the residuals change with each successive variable added to a regression.
 
 ```{r setup}
 library(StepRegression)
 ```
+
 ## Example One: mtcars
-  Let us take one of the most commonly used built-in datasets in R: mtcars.  First, we'll asign mpg to our response vector y, and the remaining columns to a design matrix x.  Then, we'll call our step_regression function, and plug the results into res_plotter_double() with addIntercept = TRUE.
+
+Let us take one of the most commonly used built-in datasets in R: mtcars.  First, we'll asign mpg to our response vector y, and the remaining columns to a design matrix x.  Then, we'll call our step_regression function, and plug the results into res_plotter_double() with addIntercept = TRUE.
+
 ```{r,mtcars}
 data(mtcars)
 head(mtcars)
 ```
-# Order and MSE
-  By default, the columns of the residuals matrix are ordered so that the intercept is in the first column, and the most significant variables come first.  In this case, significance is determined by which columns give the lowest MSE in predicting the response vector when alone.  This does not, however, mean that they will be significant when applied alongside other variables.
+# Order and SSE
+
+By default, the columns of the residuals matrix are ordered so that the intercept is in the first column, and the most significant variables come first.  In this case, significance is determined by which columns give the lowest SSE in predicting the response vector when alone.  This does not, however, mean that they will be significant when applied alongside other variables.
+
 ```{r,mtcars_residuals, fig.width=8, fig.height=16}
 y<-mtcars$mpg
 x<-mtcars[,-1]
 res<-StepRegression::step_regression(x,y,addIntercept=TRUE)
 head(as.data.frame(res))
 ```
+
 # res_plotter() and res_plotter_double()
-  There are two built-in plotting functions for this package: res_plotter() and res_plotter_double().  They both create residuals vs values sub-plots for each variable, with each corner containing the MSE after each variable is added to the regression, and the percent by which each variable reduced the MSE.  The only difference between the two functions is that res_plotter_double has two columns of plots.
+
+There are two built-in plotting functions for this package: res_plotter() and res_plotter_double().  They both create residuals vs values sub-plots for each variable, with each corner containing the SSE after each variable is added to the regression, and the percent by which each variable reduced the SSE.  The only difference between the two functions is that res_plotter_double has two columns of plots.
+
 ```{r,mtcars_visual, fig.width=8, fig.height=16}
 res_plotter_double(res,y,main="Residuals v MPG for Various Factors")
 ```
+
 # Utility
-  This function has two main uses.  First, it helps identify which variables to include in a multivariate regression.  Looking at the mtcars visual, it is interesting to note that several variables that seemed important when examined in isolation are found to do little to imporve the MSE when others are included as well.  The "disp" (displacement), "drat" (rear axle ratio), "vs" (v-shape vs inline), "carb" (number of carburetors) and "gear" all turned out to be less important than they initially seemed, while the opposite could be said for "hp" (horsepower), "am" (manual vs automatic), and "qsec" (quarter mile time).
-  The second use is helping to understand how regressions work.  Rather than regress all of the variables together, step_regression regresses each out of y and the remaining x variables.  Each step is essentially applying regression to the residuals leftover.
+
+This function has two main uses.  First, it helps identify which variables to include in a multivariate regression.  Looking at the mtcars visual, it is interesting to note that several variables that seemed important when examined in isolation are found to do little to improve the SSE when others are included as well.  The "disp" (displacement), "drat" (rear axle ratio), "vs" (v-shape vs inline), "carb" (number of carburetors) and "gear" all turned out to be less important than they initially seemed, while the opposite could be said for "hp" (horsepower), "am" (manual vs automatic), and "qsec" (quarter mile time).
+
+The second use is helping to understand how regressions work.  Rather than regress all of the variables together, step_regression regresses each out of y and the remaining x variables.  Each step is essentially applying regression to the residuals leftover.
 
 ```{r, swiss}
 data(swiss)
 head(swiss)
 ```
+
 # Swiss Example & res_plotter()
-  Here is a second example, this time using the Swiss dataset with the res_plotter function.  Here, we are excluding "Infant.Mortality" as it does not seem an appropriate predictor of fertility.  The information conveyed by res_plotter() is essentially the same as res_plotter_double(), albeit with just one column.  One can once again see that the importance of variables changes when others are included--in this case the "examination" and "agriculture" have switches places of importance.
+
+Here is a second example, this time using the Swiss dataset with the res_plotter function.  Here, we are excluding "Infant.Mortality" as it does not seem an appropriate predictor of fertility.  The information conveyed by res_plotter() is essentially the same as res_plotter_double(), albeit with just one column.  One can once again see that the importance of variables changes when others are included--in this case the "examination" and "agriculture" have switches places of importance.
+
 ```{r, swiss_example,fig.width=8,fig.height=16}
 y<-swiss$Fertility
 x<-swiss[,c(-1,-6)]
 res<-step_regression(x,y,addIntercept=TRUE)
 res_plotter(res,y,main="Residuals of Fertility by Various Factors")
 ```
+
 # Under the Hood using mtcars dataset
-  As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix.  For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables.  Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain.
-  Below I've included a proof, checking each step with the lm() function.  To avoid too much repetition, several variables will be regressed at once.  For the first step, I've performed a regression on all of the variables in mtcars--one using linear algebra and the second using lm().  The second does two: the y-intercept and "cyl" column.  Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed.  While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once.
-  In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when one uses the lm() function to do the entire regression at once.  However, results will vary between two different uses of stepRegression if one regresses the variables in different orders or different groups.  A stepwise regression is more a tool for examining residuals than coefficients.
+
+As mentiond above, this package works by regressing one variable out at a time from the response vector and all other variables in the design matrix.  For each variable except the last, the function is essentially doing two regressions: the first on y, and the second on the other x variables.  Then, the residuals for both y and the remaining x variables are calculated, and the function is then repeated, regressing one variable out at a time until none remain.
+
+Below I've included a proof, checking each step with the lm() function.  To avoid too much repetition, several variables will be regressed at once.  For the first step, I've performed a regression on all of the variables in mtcars--one using linear algebra and the second using lm().  The second does two: the y-intercept and "cyl" column.  Notice that while the coefficients match those for the lm() function, neither of these match the first multivariate regression performed.  While doing a regression in steps like this can be useful for examining the work each variable is doing to explain y, getting correct coefficients for all of the variables would require doing all of the variables at once.
+
+In each step though, whether regressing out 2, 6, 1, or any number of variables, the coefficients are the same (with room for floating point errors) as when one uses the lm() function to do the entire regression at once.  However, results will vary between two different uses of stepRegression if one regresses the variables in different orders or different groups.  A stepwise regression is more a tool for examining residuals than coefficients.
+
 ## EXAMPLE 1: Regress using all independent variables at once
+
 ```{r}
 data(mtcars)
 y <- mtcars$mpg
@@ -73,8 +94,11 @@ print("Builtin lm Function Result")
 print(lm (y ~ x)$coefficients)
 x <- cbind(c(1),x); colnames(x)[1] <- "Intercept"
 ```
+
 ## EXAMPLE 2: Regress two variables twice, all but the last, then the last variable
+
 ### Regress intercept and number of cylinders
+
 ```{r}
 solveY <- solve(t(x[,1:2]) %*% x[,1:2]) %*% t(x[,1:2]) %*% y
 print("Linear Algebra Result")
@@ -84,7 +108,9 @@ print("Builtin lm Function Result")
 xTemp <- x[,2]
 print(lm(y ~ xTemp)$coefficients)
 ```
+
 ### Looking at results of regressing Intercept and Cylinders out of the other independent variables
+
 ```{r}
 solveX <- solve(t(x[,1:2]) %*% x[,1:2]) %*% t(x[,1:2]) %*% x[,3:ncol(x)]
 print("Linear Algebra Result")
@@ -95,6 +121,7 @@ print(lm (x[,3:ncol(x)] ~ x[,2])$coefficients)
 ```
 
 ### Regress displacement and horsepower
+
 ```{r}
 yError <- y - x[,1:2] %*% solveY
 xError <- x[,3:ncol(x)] - x[,1:2] %*% solveX
@@ -111,6 +138,7 @@ print(lm(y ~ x0)$coefficients[3:4])
 ```
 
 ### Regress rear axle ratio, weight, quarter-mile time, engine type, transmission, and number of forward gears
+
 ```{r}
 yError <- yError - xError[,1:2] %*% solveY
 xError <- xError[,3:ncol(xError)] - xError[,1:2] %*% solveX
@@ -125,7 +153,9 @@ print("")
 print("Builtin lm Function Result")
 print(lm(y ~ x0)$coefficients[5:10])
 ```
+
 ### Regress number of carburetors
+
 ```{r}
 yError <- yError - xError[,1:6] %*% solveY
 xError <- xError[,7:ncol(xError)] - xError[,1:6] %*% solveX
@@ -138,5 +168,7 @@ print("")
 print("Builting lm Function Result")
 print(lm(y ~ x0)$coefficients[11])
 ```
+
 # Conclusion
-  I hope that you may fine this small package useful.  It is designed to fill a narrow niche, but I hope that it fills it well.
+
+I hope that you may fine this small package useful.  It is designed to fill a narrow niche, but I hope that it fills it well.
